@@ -83,10 +83,25 @@ def changepass():
         old_password = request.form.get('oldPassword')
         new_password = request.form.get('newPassword')
 
+        if not all([email, old_password, new_password]):
+            flash('Please fill in all fields.', 'error')
+            return redirect(url_for('auth.changepass'))
+
+        if email != session.get('user_email'):
+            flash('You can only change your own password.', 'error')
+            return redirect(url_for('auth.changepass'))
+
         db = Database()
-        db.change_password(email,old_password,new_password)
-        db.close()
-        return redirect(url_for('auth.login'))
+        try:
+            if db.change_password(email, old_password, new_password):
+                flash('Password changed successfully!', 'success')
+                return redirect(url_for('auth.login'))
+            else:
+                flash('Invalid current password.', 'error')
+        except Exception as e:
+            flash('An error occurred while changing password.', 'error')
+        finally:
+            db.close()
 
     return render_template("changepass.html")
 
@@ -97,17 +112,25 @@ def randval():
 
 #add clients Page
 @auth.route('/addclients', methods=['GET','POST'])
+@login_required
 def addclient():
-    db = Database()
-    try:
-        if request.method == 'POST':
-            data = db.fetch_data_from_a_page(page= "addClients")
-            if data:
-                db.create_table('clients')
-                db.insert_user_to_table('clients', data)
+    if request.method == 'POST':
+        db = Database()
+        try:
+            data = db.fetch_data_from_a_page(page="addClients")
+            if not data:
+                flash('Please fill in all fields.', 'error')
                 return redirect(url_for('auth.addclient'))
-    finally:
-        db.close()
+
+            db.create_table('clients')
+            db.insert_user_to_table('clients', data)
+            flash('Client added successfully!', 'success')
+            return redirect(url_for('auth.addclient'))
+        except Exception as e:
+            flash('An error occurred while adding client.', 'error')
+        finally:
+            db.close()
+
     return render_template("addClients.html")
 
 @auth.route('/forgotpass', methods=['GET', 'POST'])
