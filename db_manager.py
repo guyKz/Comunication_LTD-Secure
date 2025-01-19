@@ -245,3 +245,14 @@ class Database:
         except Exception as e: #Proper error handling
             print(f"Error fetching data from page {page}: {e}")
             return None
+
+
+    def close(self):
+        try:
+            if self.cursor:
+                self.cursor.close()
+            if self.conn:
+                self.conn.close()
+            print("Database Connection closed")
+        except Exception as e:
+            print(f"Error closing database connection: {e}")
